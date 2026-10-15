@@ -36,8 +36,8 @@ Make sure you have [Node.js](https://nodejs.org/) (version 18 or higher) install
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/gym-management.git
-cd gym-management
+git clone https://github.com/uxabhi01/Gym_management.git
+cd Gym_management
 ```
 
 ### 2. Install dependencies
