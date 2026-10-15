@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Gym — Premium Management System</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="State of the art Gym Management portal for member tracking, attendance records, financial ledgers, and expiration alerts.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="/src/css/style.css">
+</head>
+<body>
+  <!-- App Container -->
+  <div id="app-shell" class="app-shell hidden">
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+      <div class="header-logo">
+        <div class="logo-icon">
+          <i data-lucide="dumbbell"></i>
+        </div>
+        <div class="logo-text">
+          <h1>APEX<span>GYM</span></h1>
+          <p>MANAGEMENT PORTAL</p>
+        </div>
+      </div>
+
+      <nav class="header-nav">
+        <button class="nav-link active" data-view="dashboard" id="nav-dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-link" data-view="members" id="nav-members">
+          <i data-lucide="users"></i>
+          <span>Members</span>
+        </button>
+        <button class="nav-link" data-view="attendance" id="nav-attendance">
+          <i data-lucide="calendar-check"></i>
+          <span>Attendance</span>
+        </button>
+        <button class="nav-link" data-view="payments" id="nav-payments">
+          <i data-lucide="credit-card"></i>
+          <span>Payments</span>
+        </button>
+      </nav>
+
+      <div class="header-actions">
+        <!-- Notification Toggle -->
+        <button class="icon-btn" id="notification-toggle" aria-label="Toggle notifications">
+          <div class="bell-container">
+            <i data-lucide="bell"></i>
+            <span class="notification-badge hidden" id="notification-count">0</span>
+          </div>
+        </button>
+
+        <!-- Admin Info -->
+        <div class="admin-profile" id="admin-profile-menu">
+          <div class="admin-avatar">
+            <i data-lucide="shield-check"></i>
+          </div>
+          <div class="admin-info">
+            <span class="admin-name" id="user-display-name">Admin</span>
+            <span class="admin-role">Owner</span>
+          </div>
+          <button class="logout-btn" id="action-logout" title="Logout">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="app-content">
+      <div id="view-mount-point" class="view-mount">
+        <!-- SPA view is injected here -->
+      </div>
+    </main>
+
+    <!-- Notifications Drawer -->
+    <aside class="notifications-drawer" id="notifications-drawer">
+      <div class="drawer-overlay" id="drawer-overlay"></div>
+      <div class="drawer-panel">
+        <div class="drawer-header">
+          <h2>Notifications & Reminders</h2>
+          <button class="close-btn" id="drawer-close">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="drawer-content" id="notifications-list">
+          <!-- Populated by JavaScript -->
+          <div class="empty-state">
+            <i data-lucide="bell-off"></i>
+            <p>No active reminders at this time.</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Common Modals Container -->
+    <div class="modal-overlay hidden" id="modal-container">
+      <!-- Injected modal body will go here -->
+    </div>
+  </div>
+
+  <!-- Auth Screen Container -->
+  <div id="auth-screen" class="auth-screen">
+    <!-- Logged in state logic happens in JavaScript -->
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="global-loader" class="global-loader">
+    <div class="loader-spinner"></div>
+    <p>Loading Apex Systems...</p>
+  </div>
+
+  <script type="module" src="/src/js/main.js"></script>
+</body>
+</html>
