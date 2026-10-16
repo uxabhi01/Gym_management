@@ -12,13 +12,28 @@ function getHeaders() {
 }
 
 async function request(url, options = {}) {
-  const response = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers: {
-      ...getHeaders(),
-      ...options.headers
+  let response;
+  try {
+    // Add a 15 second timeout for mobile/WiFi connections
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    response = await fetch(`${API_BASE}${url}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        ...getHeaders(),
+        ...options.headers
+      }
+    });
+
+    clearTimeout(timeoutId);
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. Check your network connection.');
     }
-  });
+    throw new Error('Network error. Please check if the server is running and you are connected to the same WiFi.');
+  }
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
@@ -97,5 +112,24 @@ export const API = {
     request('/attendance/checkout', {
       method: 'POST',
       body: JSON.stringify({ member_id: memberId })
-    })
+    }),
+
+  // Calendar & Attendance Management
+  getAttendanceByDate: (date) => request(`/attendance/date/${date}`),
+  
+  getActiveMembers: () => request('/attendance/active-members'),
+  
+  markAttendance: (memberIds) =>
+    request('/attendance/mark', {
+      method: 'POST',
+      body: JSON.stringify({ member_ids: memberIds })
+    }),
+  
+  syncAttendance: (presentIds) =>
+    request('/attendance/sync', {
+      method: 'POST',
+      body: JSON.stringify({ present_ids: presentIds })
+    }),
+
+  getMonthAttendance: (year, month) => request(`/attendance/month/${year}/${month}`)
 };

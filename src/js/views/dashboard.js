@@ -138,8 +138,10 @@ function initCharts(chartsData) {
   const revenueCanvas = document.getElementById('revenue-chart-canvas');
 
   if (!statusCanvas || !revenueCanvas) return;
-
-  // Chart Global Default Settings for Dark Mode
+  if (typeof Chart === 'undefined') {
+    console.warn('Chart.js is not loaded yet');
+    return;
+  }
   Chart.defaults.color = '#9ca3af';
   Chart.defaults.font.family = 'Outfit, sans-serif';
 

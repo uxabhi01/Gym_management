@@ -463,4 +463,167 @@ router.post('/attendance/checkout', async (req, res) => {
   }
 });
 
+// Route: Get attendance for a specific date (calendar view)
+router.get('/attendance/date/:date', async (req, res) => {
+  try {
+    const { date } = req.params; // YYYY-MM-DD
+    const logs = await dbAll(`
+      SELECT a.*, m.name, m.phone, m.membership_type, m.status as member_status,
+             m.end_date, m.due_amount
+      FROM attendance a
+      JOIN members m ON a.member_id = m.id
+      WHERE date(a.check_in_time) = ?
+      ORDER BY a.check_in_time DESC
+    `, [date]);
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route: Get all active members for attendance marking
+router.get('/attendance/active-members', async (req, res) => {
+  try {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    // Get all active members with their today's attendance status
+    const members = await dbAll(`
+      SELECT m.id, m.name, m.phone, m.membership_type, m.status, 
+             m.end_date, m.due_amount, m.start_date,
+             (SELECT COUNT(*) FROM attendance a 
+              WHERE a.member_id = m.id AND date(a.check_in_time) = ?) as attended_today
+      FROM members m 
+      WHERE m.status = 'Active'
+      ORDER BY m.name ASC
+    `, [todayStr]);
+    
+    res.json(members);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route: Bulk mark attendance (present/absent for multiple members)
+router.post('/attendance/mark', async (req, res) => {
+  try {
+    const { member_ids } = req.body; // array of member IDs to mark present
+    if (!member_ids || !Array.isArray(member_ids)) {
+      return res.status(400).json({ error: 'member_ids array is required' });
+    }
+    
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    let marked = 0;
+    let skipped = 0;
+    
+    for (const memberId of member_ids) {
+      // Check if already marked today
+      const existing = await dbGet(`
+        SELECT id FROM attendance 
+        WHERE member_id = ? AND date(check_in_time) = ?
+      `, [memberId, todayStr]);
+      
+      if (existing) {
+        skipped++;
+        continue;
+      }
+      
+      // Check member is active
+      const member = await dbGet('SELECT * FROM members WHERE id = ? AND status = ?', [memberId, 'Active']);
+      if (!member) {
+        skipped++;
+        continue;
+      }
+      
+      await dbRun(`
+        INSERT INTO attendance (member_id, check_in_time, check_out_time)
+        VALUES (?, ?, NULL)
+      `, [memberId, now.toISOString()]);
+      marked++;
+    }
+    
+    res.status(201).json({ 
+      message: `Attendance marked: ${marked} present, ${skipped} skipped (already marked or inactive).`,
+      marked,
+      skipped
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route: Sync today's attendance in a single atomic request (fast for mobile)
+router.post('/attendance/sync', async (req, res) => {
+  try {
+    const { present_ids } = req.body;
+    if (!Array.isArray(present_ids)) {
+      return res.status(400).json({ error: 'present_ids array is required' });
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const nowIso = new Date().toISOString();
+
+    await dbRun('BEGIN TRANSACTION');
+    try {
+      // 1. Delete attendance for today for any member who is NOT in present_ids
+      if (present_ids.length > 0) {
+        const placeholders = present_ids.map(() => '?').join(',');
+        await dbRun(`
+          DELETE FROM attendance 
+          WHERE date(check_in_time) = ? 
+            AND member_id NOT IN (${placeholders})
+        `, [todayStr, ...present_ids]);
+      } else {
+        // If present_ids is empty, clear today's attendance
+        await dbRun('DELETE FROM attendance WHERE date(check_in_time) = ?', [todayStr]);
+      }
+
+      // 2. Insert any member in present_ids who isn't already marked today
+      for (const memberId of present_ids) {
+        const existing = await dbGet(`
+          SELECT id FROM attendance 
+          WHERE member_id = ? AND date(check_in_time) = ?
+        `, [memberId, todayStr]);
+
+        if (!existing) {
+          await dbRun(`
+            INSERT INTO attendance (member_id, check_in_time, check_out_time)
+            VALUES (?, ?, NULL)
+          `, [memberId, nowIso]);
+        }
+      }
+
+      await dbRun('COMMIT');
+      res.json({ message: 'Attendance synced successfully.' });
+    } catch (txErr) {
+      await dbRun('ROLLBACK');
+      throw txErr;
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route: Get dates with attendance records for a given month (for calendar dots)
+router.get('/attendance/month/:year/:month', async (req, res) => {
+  try {
+    const { year, month } = req.params;
+    const paddedMonth = month.padStart(2, '0');
+    const prefix = `${year}-${paddedMonth}`;
+    
+    const days = await dbAll(`
+      SELECT DISTINCT date(check_in_time) as day, COUNT(DISTINCT member_id) as count
+      FROM attendance
+      WHERE strftime('%Y-%m', check_in_time) = ?
+      GROUP BY day
+      ORDER BY day ASC
+    `, [prefix]);
+    
+    res.json(days);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

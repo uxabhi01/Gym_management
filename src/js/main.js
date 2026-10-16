@@ -33,17 +33,21 @@ export async function bootstrapApp() {
     const nameEl = document.getElementById('user-display-name');
     if (nameEl && adminName) nameEl.textContent = adminName;
 
-    // Initialize SPA navigation links
-    Router.init();
+    try {
+      // Initialize SPA navigation links
+      Router.init();
 
-    // Activate the sliding alerts panel drawer
-    await initNotifications();
+      // Activate the sliding alerts panel drawer
+      await initNotifications();
 
-    // Direct user to the default screen (Dashboard)
-    await Router.navigate('dashboard');
-
-    // Hide loader after dashboard mount finishes
-    if (loader) loader.classList.add('hidden');
+      // Direct user to the default screen (Dashboard)
+      await Router.navigate('dashboard');
+    } catch (err) {
+      console.error('Bootstrap error:', err);
+    } finally {
+      // Guarantee loader is hidden even if network is slow or errors occur
+      if (loader) loader.classList.add('hidden');
+    }
   }
 }
 

@@ -31,8 +31,8 @@ app.get('*', (req, res) => {
 async function startServer() {
   try {
     await initDb();
-    app.listen(PORT, () => {
-      console.log(`Express Gym Server listening on port ${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Express Gym Server listening on http://0.0.0.0:${PORT}`);
     });
   } catch (err) {
     console.error('Critical failure initiating database / server startup:', err);
